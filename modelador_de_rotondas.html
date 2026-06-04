@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modelador de Rotondas Interactivo</title>
+    <!-- Tailwind CSS para diseño y estilos fluidos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Fondo estilo cuadrícula blueprint de ingeniería */
+        .blueprint-grid {
+            background-color: #0b0f19;
+            background-image: 
+                linear-gradient(rgba(30, 41, 59, 0.4) 1.5px, transparent 1.5px),
+                linear-gradient(90deg, rgba(30, 41, 59, 0.4) 1.5px, transparent 1.5px),
+                linear-gradient(rgba(51, 65, 85, 0.15) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(51, 65, 85, 0.15) 1px, transparent 1px);
+            background-size: 80px 80px, 80px 80px, 16px 16px, 16px 16px;
+            background-position: center;
+        }
+
+        /* Control deslizante estilizado */
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            border: 2px solid #ffffff;
+            box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans">
+
+    <!-- Encabezado de la Aplicación -->
+    <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur py-4 px-6 sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-indigo-600 p-2.5 rounded-xl text-white font-bold text-xl shadow-lg shadow-indigo-500/20">
+                    🔄
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight">Estudio y Modelado de Rotondas</h1>
+                    <p class="text-xs text-slate-400">Simulador técnico de infraestructura vial y capacidad de flujo</p>
+                </div>
+            </div>
+            
+            <!-- Presets Rápidos de Ingeniería -->
+            <div class="flex flex-wrap gap-2 bg-slate-800/60 p-1.5 rounded-xl border border-slate-700">
+                <button onclick="cargarPreset(28, 1, 4.0, 3, 'Mini-Rotonda')" class="px-3 py-1.5 text-xs font-semibold rounded-lg hover:bg-slate-700 transition bg-slate-700 text-white" id="preset-mini">
+                    📍 Urbana Mini (1 carril)
+                </button>
+                <button onclick="cargarPreset(45, 2, 3.75, 4, 'Rotonda Estándar')" class="px-3 py-1.5 text-xs font-semibold rounded-lg hover:bg-slate-700 transition text-slate-300" id="preset-estandar">
+                    🏢 Estándar (2 carriles)
+                </button>
+                <button onclick="cargarPreset(65, 3, 3.6, 5, 'Gran Rotonda')" class="px-3 py-1.5 text-xs font-semibold rounded-lg hover:bg-slate-700 transition text-slate-300" id="preset-autovia">
+                    🛣️ Interurbana (3 carriles)
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Contenedor Principal -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col lg:flex-row gap-6">
+        
+        <!-- Panel de Control e Inputs (Izquierda) -->
+        <section class="w-full lg:w-[380px] flex flex-col gap-5 bg-slate-900/50 border border-slate-800/80 p-5 rounded-2xl backdrop-blur-sm self-start">
+            <h2 class="text-base font-bold border-b border-slate-800 pb-2.5 flex items-center justify-between text-indigo-400">
+                <span>Parámetros de Diseño</span>
+                <span class="text-xs text-slate-500 font-normal">Geometría 2D</span>
+            </h2>
+            
+            <!-- Diámetro Exterior -->
+            <div class="space-y-1.5">
+                <div class="flex justify-between items-center">
+                    <span class="text-xs font-semibold text-slate-300">Diámetro Exterior (D)</span>
+                    <span class="text-xs font-bold text-indigo-400 bg-indigo-500/10 px-2.5 py-0.5 rounded-md" id="lbl-diametro">45.0 m</span>
+                </div>
+                <input type="range" id="param-diametro" min="20" max="80" step="1" value="45" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                <div class="flex justify-between text-[10px] text-slate-500">
+                    <span>Mín: 20m</span>
+                    <span>Máx: 80m</span>
+                </div>
+            </div>
+
+            <!-- Número de Carriles -->
+            <div class="space-y-1.5">
+                <div class="flex justify-between items-center">
+                    <span class="text-xs font-semibold text-slate-300">Carriles Anulares</span>
+                    <span class="text-xs font-bold text-indigo-400 bg-indigo-500/10 px-2.5 py-0.5 rounded-md" id="lbl-carriles">2</span>
+                </div>
+                <input type="range" id="param-carriles" min="1" max="4" step="1" value="2" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                <div class="flex justify-between text-[10px] text-slate-500">
+                    <span>1 Carril</span>
+                    <span>4 Carriles</span>
+                </div>
+            </div>
+
+            <!-- Ancho de Carril -->
+            <div class="space-y-1.5">
+                <div class="flex justify-between items-center">
+                    <span class="text-xs font-semibold text-slate-300">Ancho de Carril (W)</span>
+                    <span class="text-xs font-bold text-indigo-400 bg-indigo-500/10 px-2.5 py-0.5 rounded-md" id="lbl-ancho-carril">3.75 m</span>
+                </div>
+                <input type="range" id="param-ancho-carril" min="3.0" max="5.0" step="0.1" value="3.75" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                <div class="flex justify-between text-[10px] text-slate-500">
+                    <span>Mín: 3.0m</span>
+                    <span>Máx: 5.0m</span>
+                </div>
+            </div>
+
+            <!-- Accesos / Calles Conectoras -->
+            <div class="space-y-1.5">
+                <div class="flex justify-between items-center">
+                    <span class="text-xs font-semibold text-slate-300">Accesos (Bocas/Brazos)</span>
+                    <span class="text-xs font-bold text-indigo-400 bg-indigo-500/10 px-2.5 py-0.5 rounded-md" id="lbl-accesos">4 entradas</span>
+                </div>
+                <input type="range" id="param-accesos" min="3" max="6" step="1" value="4" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                <div class="flex justify-between text-[10px] text-slate-500">
+                    <span>3 Bocas</span>
+                    <span>6 Bocas</span>
+                </div>
+            </div>
+
+            <!-- Simulación de Tráfico -->
+            <div class="border-t border-slate-800 pt-4 space-y-3">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Dinámica de Tráfico</h3>
+                
+                <!-- Velocidad del Tráfico -->
+                <div class="space-y-1.5">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs text-slate-300">Velocidad Simulación</span>
+                        <span class="text-xs text-indigo-400 font-mono" id="lbl-velocidad">40 km/h</span>
+                    </div>
+                    <input type="range" id="param-velocidad" min="10" max="70" step="5" value="40" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                </div>
+
+                <!-- Botones de Acción sobre Tráfico -->
+                <div class="grid grid-cols-2 gap-2 pt-1">
+                    <button id="btn-add-car" class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-1.5 px-3 rounded-lg text-xs transition flex items-center justify-center gap-1.5 active:scale-95 shadow-md shadow-indigo-600/10">
+                        ➕ Añadir Coche
+                    </button>
+                    <button id="btn-clear-traffic" class="bg-slate-850 hover:bg-slate-800 border border-slate-700 text-slate-300 font-semibold py-1.5 px-3 rounded-lg text-xs transition active:scale-95">
+                        🗑️ Vaciar Vía
+                    </button>
+                </div>
+
+                <!-- Sentido de Circulación / Preferencias -->
+                <div class="flex items-center justify-between text-xs text-slate-300 bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/50">
+                    <span>Sentido de giro:</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="param-sentido" class="sr-only peer" checked>
+                        <div class="w-24 h-6 bg-slate-800 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-indigo-500 after:rounded-full after:h-5 after:w-[46px] after:transition-all peer-checked:after:bg-emerald-500 text-[10px] flex items-center justify-between px-2 font-bold pointer-events-none">
+                            <span class="text-slate-400 peer-checked:text-white">Horario</span>
+                            <span class="text-white peer-checked:text-slate-400">Antihor.</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Ficha Técnica de Ingeniería -->
+            <div class="bg-slate-950/70 p-4 rounded-xl border border-indigo-500/10 space-y-2 text-xs">
+                <h3 class="font-bold text-slate-200 border-b border-slate-800 pb-1.5 flex items-center gap-1.5">
+                    <span>📋 Ficha de Proyecto</span>
+                </h3>
+                <div class="grid grid-cols-2 gap-y-2 text-slate-400 mt-2">
+                    <div>Tipo Calzada:</div>
+                    <div class="text-right text-white font-medium" id="val-tipo">Rotonda Estándar</div>
+                    
+                    <div>Isleta Central (Ø):</div>
+                    <div class="text-right text-white font-mono" id="val-isleta">30.00 m</div>
+                    
+                    <div>Ancho Calzada:</div>
+                    <div class="text-right text-white font-mono" id="val-calzada">7.50 m</div>
+                    
+                    <div>Superficie Ocupada:</div>
+                    <div class="text-right text-emerald-400 font-mono font-bold" id="val-superficie">1,590 m²</div>
+                    
+                    <div>Flujo Teórico Máx:</div>
+                    <div class="text-right text-blue-400 font-mono font-bold" id="val-capacidad">3,200 veh/h</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Lienzo de Modelado y Simulación (Derecha) -->
+        <section class="flex-1 flex flex-col bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl min-h-[500px]">
+            <!-- Barra superior del visualizador -->
+            <div class="bg-slate-900/90 border-b border-slate-800 py-3 px-4 flex justify-between items-center">
+                <span class="text-xs font-medium text-slate-400 flex items-center gap-2">
+                    <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                    Simulador Dinámico (Escala Real)
+                </span>
+                <span class="text-[10px] bg-slate-800 text-slate-300 px-2 py-1 rounded border border-slate-700/50">
+                    💡 Haz click en los carriles para spawnear un coche
+                </span>
+            </div>
+
+            <!-- Lienzo Gráfico Interactuable -->
+            <div class="flex-1 blueprint-grid relative flex items-center justify-center p-4 min-h-[400px] overflow-hidden" id="canvas-container">
+                <canvas id="sim-canvas" class="w-full h-full max-w-[650px] max-h-[650px] cursor-crosshair drop-shadow-[0_10px_30px_rgba(0,0,0,0.8)]"></canvas>
+            </div>
+
+            <!-- Notas de Ayuda o Leyenda -->
+            <div class="bg-slate-900/90 py-3 px-5 border-t border-slate-800 flex justify-between items-center text-xs text-slate-400 flex-wrap gap-2">
+                <span>⚠️ Las mini-rotondas limitan los giros de camiones largos. Diseñar con cuidado.</span>
+                <div class="flex gap-3 text-[10px]">
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-1.5 bg-yellow-400 rounded-sm"></span> Coche</span>
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-1.5 bg-emerald-400 rounded-sm"></span> Eléctrico</span>
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-1.5 bg-red-500 rounded-sm"></span> Deportivo</span>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Script de lógica matemática, dibujo en canvas y simulación física -->
+    <script>
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('canvas-container');
+
+        // Controles de Entrada
+        const paramDiametro = document.getElementById('param-diametro');
+        const paramCarriles = document.getElementById('param-carriles');
+        const paramAnchoCarril = document.getElementById('param-ancho-carril');
+        const paramAccesos = document.getElementById('param-accesos');
+        const paramVelocidad = document.getElementById('param-velocidad');
+        const paramSentido = document.getElementById('param-sentido');
+        const btnAddCar = document.getElementById('btn-add-car');
+        const btnClearTraffic = document.getElementById('btn-clear-traffic');
+
+        // Etiquetas Informativas
+        const lblDiametro = document.getElementById('lbl-diametro');
+        const lblCarriles = document.getElementById('lbl-carriles');
+        const lblAnchoCarril = document.getElementById('lbl-ancho-carril');
+        const lblAccesos = document.getElementById('lbl-accesos');
+        const lblVelocidad = document.getElementById('lbl-velocidad');
+
+        // Ficha Técnica
+        const valTipo = document.getElementById('val-tipo');
+        const valIsleta = document.getElementById('val-isleta');
+        const valCalzada = document.getElementById('val-calzada');
+        const valSuperficie = document.getElementById('val-superficie');
+        const valCapacidad = document.getElementById('val-capacidad');
+
+        // Botones de presets
+        const btnMini = document.getElementById('preset-mini');
+        const btnEstandar = document.getElementById('preset-estandar');
+        const btnAutovia = document.getElementById('preset-autovia');
+
+        // Configuración Física del Canvas y Escala
+        const CANVAS_VIRTUAL_SIZE = 600; // Resolución base
+        let scaleMetersToPixels = 6.2;   // Factor dinámico para que quepa en el canvas
+        let animFrameId = null;
+
+        // Estado de la Simulación
+        let totalDiameter = 45;       // metros
+        let numLanes = 2;
+        let laneWidth = 3.75;         // metros
+        let numArms = 4;
+        let simSpeedKmh = 40;
+        let directionClockwise = false; // Sentido antihorario por defecto (Regulación europea/española)
+
+        // Estructura para almacenar los vehículos simulados
+        // Cada coche tiene: laneIndex, angle (rad), speed, color, length, width, targetLane, turningState
+        let cars = [];
+
+        // Colores de coches aleatorios
+        const carColors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#8b5cf6', '#06b6d4', '#f97316'];
+
+        function initCanvas() {
+            // Soporte para pantallas Retina de alta densidad
+            const dpr = window.devicePixelRatio || 1;
+            const size = Math.min(container.clientWidth - 32, container.clientHeight - 32, 600);
+            
+            canvas.width = size * dpr;
+            canvas.height = size * dpr;
+            canvas.style.width = `${size}px`;
+            canvas.style.height = `${size}px`;
+            
+            ctx.scale(dpr, dpr);
+            
+            // Ajustar el factor de escala de metros a píxeles según el tamaño de la rotonda
+            // El diámetro exterior máximo es 80m, queremos un margen a los lados (total aprox 110m visibles)
+            scaleMetersToPixels = size / 105; 
+        }
+
+        // Añadir coche a la simulación
+        function spawnCar(laneIndex = -1) {
+            if (laneIndex === -1) {
+                laneIndex = Math.floor(Math.random() * numLanes);
+            }
+            
+            // Evitar desbordes de carril
+            laneIndex = Math.min(laneIndex, numLanes - 1);
+
+            const speedMultiplier = 0.9 + Math.random() * 0.2; // ligera variación
+            const car = {
+                laneIndex: laneIndex,
+                angle: Math.random() * Math.PI * 2,
+                speed: (simSpeedKmh * 0.2777) * speedMultiplier, // km/h a m/s
+                color: carColors[Math.floor(Math.random() * carColors.length)],
+                width: 1.8,  // metros de ancho aprox
+                length: 4.1, // metros de largo
+                offset: (Math.random() - 0.5) * 0.4 // pequeño desfase del eje del carril para realismo
+            };
+            cars.push(car);
+        }
+
+        // Vaciar todos los coches
+        function clearTraffic() {
+            cars = [];
+        }
+
+        // Cambiar parámetros por Presets preconfigurados
+        function cargarPreset(diametro, carriles, ancho, accesos, titulo) {
+            paramDiametro.value = diametro;
+            paramCarriles.value = carriles;
+            paramAnchoCarril.value = ancho;
+            paramAccesos.value = accesos;
+
+            // Actualizar variables
+            totalDiameter = diametro;
+            numLanes = carriles;
+            laneWidth = ancho;
+            numArms = accesos;
+
+            // Ajustar botones activos visualmente
+            [btnMini, btnEstandar, btnAutovia].forEach(btn => btn.classList.remove('bg-slate-700', 'text-white'));
+            [btnMini, btnEstandar, btnAutovia].forEach(btn => btn.classList.add('text-slate-300'));
+
+            if (titulo === 'Mini-Rotonda') btnMini.classList.add('bg-slate-700', 'text-white');
+            if (titulo === 'Rotonda Estándar') btnEstandar.classList.add('bg-slate-700', 'text-white');
+            if (titulo === 'Gran Rotonda') btnAutovia.classList.add('bg-slate-700', 'text-white');
+
+            actualizarLogicaYFicha();
+            
+            // Regenerar tráfico inicial adecuado
+            clearTraffic();
+            for(let i=0; i < (carriles * 2 + 1); i++) {
+                spawnCar();
+            }
+        }
+
+        // Lógica de actualización de controles y cálculos de ingeniería civil
+        function actualizarLogicaYFicha() {
+            totalDiameter = parseFloat(paramDiametro.value);
+            numLanes = parseInt(paramCarriles.value);
+            laneWidth = parseFloat(paramAnchoCarril.value);
+            numArms = parseInt(paramAccesos.value);
+            simSpeedKmh = parseInt(paramVelocidad.value);
+            directionClockwise = !paramSentido.checked; // Antihorario si está activo (true en el switch)
+
+            // Limitación física: El diámetro de la isla central (Isleta)
+            // Isleta (D) = Diámetro Exterior - 2 * (Num Carriles * Ancho Carril)
+            const calzadaAncho = numLanes * laneWidth;
+            let diametroIsleta = totalDiameter - (2 * calzadaAncho);
+
+            // Control de seguridad si el diámetro exterior es demasiado pequeño para albergar los carriles
+            if (diametroIsleta < 6) { 
+                // Forzar reajuste: Reducimos el ancho de carril o advertimos del error crítico vialmente
+                diametroIsleta = 6;
+                // Ajustamos visualmente la isleta mínima obligatoria para el diseño
+                totalDiameter = diametroIsleta + (2 * calzadaAncho);
+                paramDiametro.value = Math.ceil(totalDiameter);
+                lblDiametro.classList.add('text-red-400');
+            } else {
+                lblDiametro.classList.remove('text-red-400');
+            }
+
+            // Escribir en Labels de UI
+            lblDiametro.textContent = `${totalDiameter.toFixed(1)} m`;
+            lblCarriles.textContent = numLanes;
+            lblAnchoCarril.textContent = `${laneWidth.toFixed(2)} m`;
+            lblAccesos.textContent = `${numArms} accesos`;
+            lblVelocidad.textContent = `${simSpeedKmh} km/h`;
+
+            // Cálculos técnicos reales de la ficha de ingeniería
+            const areaOcupada = Math.round(Math.PI * Math.pow(totalDiameter / 2, 2));
+            valIsleta.textContent = `${diametroIsleta.toFixed(2)} m`;
+            valCalzada.textContent = `${calzadaAncho.toFixed(2)} m`;
+            valSuperficie.textContent = `${areaOcupada.toLocaleString('es-ES')} m²`;
+
+            // Clasificación de la vía
+            let tipo = "Urbana Convencional";
+            if (totalDiameter < 30) tipo = "Mini-Rotonda de Barrio";
+            else if (totalDiameter > 60) tipo = "Interurbana / Autovía";
+            else if (numLanes === 3) tipo = "Rotonda de Gran Capacidad";
+            valTipo.textContent = tipo;
+
+            // Estimación de capacidad (Fórmula empírica aproximada basada en el método de Wardrop)
+            // A mayor diámetro, carriles y accesos organizados, mayor capacidad teórica de vehículos por hora.
+            const capacidadTeorica = Math.round((numLanes * 1500) * (totalDiameter / 40) * (1 - (numArms * 0.05)));
+            valCapacidad.textContent = `${capacidadTeorica.toLocaleString('es-ES')} veh/h`;
+
+            // Actualizar la velocidad de los coches existentes
+            cars.forEach(car => {
+                const speedMultiplier = 0.9 + Math.random() * 0.2;
+                car.speed = (simSpeedKmh * 0.2777) * speedMultiplier;
+            });
+        }
+
+        // Dibujar cotas de dimensiones técnicas (Flechas e indicadores métricos)
+        function dibujarCotas(cx, cy, radiusExt, radiusInt) {
+            ctx.save();
+            ctx.strokeStyle = 'rgba(59, 130, 246, 0.7)'; // azul semitransparente
+            ctx.fillStyle = 'rgba(147, 197, 253, 0.9)';
+            ctx.font = '10px monospace';
+            ctx.lineWidth = 1;
+
+            // Cota Diámetro Exterior (Línea superior horizontal fuera de la rotonda)
+            const cotaY = cy - radiusExt - 25;
+            
+            // Línea de referencia vertical izquierda
+            ctx.beginPath();
+            ctx.strokeStyle = 'rgba(59, 130, 246, 0.25)';
+            ctx.moveTo(cx - radiusExt, cy);
+            ctx.lineTo(cx - radiusExt, cotaY - 5);
+            // Línea de referencia vertical derecha
+            ctx.moveTo(cx + radiusExt, cy);
+            ctx.lineTo(cx + radiusExt, cotaY - 5);
+            ctx.stroke();
+
+            // Línea principal de la cota con flechas
+            ctx.beginPath();
+            ctx.strokeStyle = 'rgba(59, 130, 246, 0.7)';
+            ctx.moveTo(cx - radiusExt, cotaY);
+            ctx.lineTo(cx + radiusExt, cotaY);
+            ctx.stroke();
+
+            // Flechas de cota
+            dibujarFlecha(cx - radiusExt, cotaY, Math.PI);
+            dibujarFlecha(cx + radiusExt, cotaY, 0);
+
+            // Texto de medida exterior
+            const textoExt = `Ø Ext: ${totalDiameter.toFixed(1)}m`;
+            const textWidthExt = ctx.measureText(textoExt).width;
+            ctx.fillStyle = '#0b0f19';
+            ctx.fillRect(cx - (textWidthExt/2) - 4, cotaY - 6, textWidthExt + 8, 12);
+            ctx.fillStyle = '#60a5fa';
+            ctx.fillText(textoExt, cx - (textWidthExt/2), cotaY + 3);
+
+            // Cota de Isleta Central (Línea interna)
+            if (radiusInt > 15) {
+                const cotaIntY = cy;
+                ctx.beginPath();
+                ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)'; // rojo suave para el centro
+                ctx.moveTo(cx - radiusInt, cotaIntY);
+                ctx.lineTo(cx + radiusInt, cotaIntY);
+                ctx.stroke();
+
+                dibujarFlecha(cx - radiusInt, cotaIntY, 0); // apuntando hacia afuera
+                dibujarFlecha(cx + radiusInt, cotaIntY, Math.PI);
+
+                const textoInt = `Ø Isla: ${parseFloat(valIsleta.textContent).toFixed(1)}m`;
+                const textWidthInt = ctx.measureText(textoInt).width;
+                ctx.fillStyle = '#0b0f19';
+                ctx.fillRect(cx - (textWidthInt/2) - 4, cotaIntY - 6, textWidthInt + 8, 12);
+                ctx.fillStyle = '#f87171';
+                ctx.fillText(textoInt, cx - (textWidthInt/2), cotaIntY + 3);
+            }
+
+            ctx.restore();
+        }
+
+        // Dibuja una cabeza de flecha pequeña
+        function dibujarFlecha(x, y, angle) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-6, -3);
+            ctx.lineTo(-6, 3);
+            ctx.closePath();
+            ctx.fillStyle = ctx.strokeStyle;
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // Bucle de renderizado principal utilizando Canvas 2D
+        function drawSimulation() {
+            const size = canvas.width / (window.devicePixelRatio || 1);
+            ctx.clearRect(0, 0, size, size);
+
+            const cx = size / 2;
+            const cy = size / 2;
+
+            // Calcular Radios en pixeles según la escala métrica calculada
+            const rExt = (totalDiameter / 2) * scaleMetersToPixels;
+            const rInt = (parseFloat(valIsleta.textContent) / 2) * scaleMetersToPixels;
+            const wCarrilPx = laneWidth * scaleMetersToPixels;
+
+            // 1. DIBUJAR LAS CARRETERAS DE ACCESO (VÍAS EXTERNAS)
+            ctx.save();
+            ctx.fillStyle = '#1e293b'; // color asfalto oscuro
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+            ctx.lineWidth = 2;
+
+            const anguloPaso = (Math.PI * 2) / numArms;
+            const anchoViaAcceso = (laneWidth * 2.2) * scaleMetersToPixels; // ida y vuelta + arcén
+
+            for (let i = 0; i < numArms; i++) {
+                // Ángulo base del acceso
+                const angle = i * anguloPaso - Math.PI / 2; // Arriba es el primero
+
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(angle);
+
+                // Dibujar el rectángulo de la vía que se extiende hasta el borde del lienzo
+                ctx.fillRect(0, -anchoViaAcceso / 2, size, anchoViaAcceso);
+                
+                // Línea central de división de sentidos del acceso (continua o discontinua)
+                ctx.beginPath();
+                ctx.strokeStyle = '#f59e0b'; // color ámbar/amarillo de mediana
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([8, 6]);
+                ctx.moveTo(rExt - 2, 0);
+                ctx.lineTo(size, 0);
+                ctx.stroke();
+
+                // Líneas blancas del arcén exterior del acceso
+                ctx.beginPath();
+                ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+                ctx.setLineDash([]);
+                ctx.lineWidth = 1;
+                ctx.moveTo(rExt, -anchoViaAcceso / 2);
+                ctx.lineTo(size, -anchoViaAcceso / 2);
+                ctx.moveTo(rExt, anchoViaAcceso / 2);
+                ctx.lineTo(size, anchoViaAcceso / 2);
+                ctx.stroke();
+
+                ctx.restore();
+            }
+            ctx.restore();
+
+            // 2. DIBUJAR LA CALZADA ANULAR (EL ANILLO GIRATORIO)
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(cx, cy, rExt, 0, Math.PI * 2);
+            ctx.fillStyle = '#1e293b'; // Asfalto continuo de la rotonda
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.8)'; // borde exterior blanco
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+            ctx.restore();
+
+            // 3. DIBUJAR DELIMITACIONES DE CARRILES INTERNOS (Líneas Discontinuas)
+            ctx.save();
+            ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([10, 10]); // marcas de carril estándar viales
+
+            for (let i = 1; i < numLanes; i++) {
+                const rCarril = rInt + (i * wCarrilPx);
+                ctx.beginPath();
+                ctx.arc(cx, cy, rCarril, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            // 4. DIBUJAR ISLETA CENTRAL (Centro no transitable)
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(cx, cy, rInt, 0, Math.PI * 2);
+            // Estilo césped ecológico moderno
+            ctx.fillStyle = '#065f46'; // verde oscuro
+            ctx.fill();
+            ctx.strokeStyle = '#34d399'; // cordón de la acera de la isleta
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Decoración ornamental interior (patrón de ingeniería central)
+            ctx.beginPath();
+            ctx.arc(cx, cy, rInt * 0.7, 0, Math.PI * 2);
+            ctx.fillStyle = '#047857';
+            ctx.fill();
+            
+            // Un pequeño monumento/diseño geométrico en el centro absoluto
+            ctx.beginPath();
+            ctx.arc(cx, cy, Math.max(rInt * 0.25, 4), 0, Math.PI * 2);
+            ctx.fillStyle = '#10b981';
+            ctx.fill();
+            ctx.restore();
+
+            // 5. SIMULAR Y DIBUJAR COCHES EN TIEMPO REAL
+            const deltaTiempo = 1 / 60; // suponiendo 60fps constantes para suavidad
+            
+            cars.forEach(car => {
+                // Radio medio del carril en el que viaja el coche
+                const radioCarrilMeters = (parseFloat(valIsleta.textContent) / 2) + (car.laneIndex * laneWidth) + (laneWidth / 2);
+                const radioCarrilPx = radioCarrilMeters * scaleMetersToPixels;
+
+                // Calcular velocidad angular (w = v / r) en radianes por segundo
+                const velocidadAngular = car.speed / radioCarrilMeters;
+
+                // Actualizar posición angular según sentido horario o antihorario
+                if (directionClockwise) {
+                    car.angle += velocidadAngular * deltaTiempo;
+                } else {
+                    car.angle -= velocidadAngular * deltaTiempo;
+                }
+
+                // Mantener ángulo normalizado entre 0 y 2PI
+                if (car.angle < 0) car.angle += Math.PI * 2;
+                if (car.angle > Math.PI * 2) car.angle -= Math.PI * 2;
+
+                // Obtener coordenadas cartesianas relativas al centro
+                const carX = cx + Math.cos(car.angle) * (radioCarrilPx + car.offset * scaleMetersToPixels);
+                const carY = cy + Math.sin(car.angle) * (radioCarrilPx + car.offset * scaleMetersToPixels);
+
+                // Dibujar el coche
+                ctx.save();
+                ctx.translate(carX, carY);
+                
+                // Rotar coche de forma tangente a la circunferencia (perpendicular al radio)
+                // Depende de la dirección de giro
+                const angleRotation = directionClockwise ? car.angle + Math.PI / 2 : car.angle - Math.PI / 2;
+                ctx.rotate(angleRotation);
+
+                // Dimensiones del coche en píxeles
+                const carW = car.width * scaleMetersToPixels;
+                const carH = car.length * scaleMetersToPixels;
+
+                // Chasis principal del vehículo
+                ctx.fillStyle = car.color;
+                ctx.beginPath();
+                // Dibujar un rectangulo con bordes ligeramente redondeados (coche visto de arriba)
+                ctx.roundRect(-carW / 2, -carH / 2, carW, carH, 3);
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                // Techo / Cristal del Habitáculo
+                ctx.fillStyle = '#0f172a';
+                ctx.beginPath();
+                ctx.roundRect(-carW * 0.35, -carH * 0.15, carW * 0.7, carH * 0.45, 2);
+                ctx.fill();
+
+                // Faros encendidos indicando movimiento
+                ctx.fillStyle = '#fef08a'; // amarillo brillante
+                ctx.fillRect(-carW * 0.4, carH * 0.38, 2.5, 1.5); // izquierdo
+                ctx.fillRect(carW * 0.4 - 2.5, carH * 0.38, 2.5, 1.5); // derecho
+
+                ctx.restore();
+            });
+
+            // 6. DIBUJAR ACOPLAMIENTOS DE COTAS MÉTRICAS
+            dibujarCotas(cx, cy, rExt, rInt);
+
+            // Continuar loop de simulación física
+            animFrameId = requestAnimationFrame(drawSimulation);
+        }
+
+        // Event Listeners interactivos
+        function bindEvents() {
+            // Escuchadores de los controles deslizantes
+            [paramDiametro, paramCarriles, paramAnchoCarril, paramAccesos, paramVelocidad].forEach(elem => {
+                elem.addEventListener('input', actualizarLogicaYFicha);
+            });
+
+            paramSentido.addEventListener('change', actualizarLogicaYFicha);
+
+            // Agregar coche manual
+            btnAddCar.addEventListener('click', () => {
+                spawnCar();
+            });
+
+            // Limpiar pista
+            btnClearTraffic.addEventListener('click', () => {
+                clearTraffic();
+            });
+
+            // Redimensionado del canvas automático si se escala la pantalla
+            window.addEventListener('resize', () => {
+                initCanvas();
+            });
+
+            // Interactividad en el Canvas: Generar coche en carril seleccionado al hacer click
+            canvas.addEventListener('mousedown', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                // Coordenadas locales en el Canvas
+                const x = (e.clientX - rect.left) * (canvas.width / rect.width) / dpr;
+                const y = (e.clientY - rect.top) * (canvas.height / rect.height) / dpr;
+
+                const cx = (canvas.width / dpr) / 2;
+                const cy = (canvas.height / dpr) / 2;
+
+                // Distancia euclídea del click al centro de la rotonda
+                const distPx = Math.sqrt(Math.pow(x - cx, 2) + Math.pow(y - cy, 2));
+                const distMeters = distPx / scaleMetersToPixels;
+
+                const rIntMeters = parseFloat(valIsleta.textContent) / 2;
+                const rExtMeters = totalDiameter / 2;
+
+                // Si el click fue en el área de la calzada circular
+                if (distMeters >= rIntMeters && distMeters <= rExtMeters) {
+                    // Determinar qué carril se clickeó exactamente
+                    const offsetClick = distMeters - rIntMeters;
+                    const laneClicked = Math.floor(offsetClick / laneWidth);
+                    if (laneClicked >= 0 && laneClicked < numLanes) {
+                        spawnCar(laneClicked);
+                    }
+                }
+            });
+        }
+
+        // Ejecución al iniciar
+        window.onload = function() {
+            initCanvas();
+            actualizarLogicaYFicha();
+            bindEvents();
+
+            // Generar vehículos iniciales para dar vida a la maqueta vial
+            for (let i = 0; i < 6; i++) {
+                spawnCar();
+            }
+
+            // Iniciar bucle de simulación viciosa
+            drawSimulation();
+        };
+    </script>
+</body>
+</html>

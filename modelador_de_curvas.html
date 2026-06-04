@@ -1,0 +1,606 @@
+<!DOCTYPE HTML>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modelador de Rotondas y Trayectorias</title>
+    <!-- Tailwind CSS para diseño moderno en modo oscuro -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #020617; /* Fondo negro profundo matching con la entrega */
+        }
+    </style>
+</head>
+<body class="p-4 md:p-6 text-slate-100">
+
+    <div class="max-w-5xl mx-auto bg-slate-900 rounded-xl shadow-2xl overflow-hidden border border-slate-800">
+        <!-- Cabecera -->
+        <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-5 text-white text-center md:text-left border-b border-slate-800">
+            <h1 class="text-2xl font-bold tracking-tight">Modelador de Trayectorias en Rotondas</h1>
+            <p class="text-indigo-200 mt-1 text-xs md:text-sm">
+                Diseño geométrico y cálculo físico de curvas, fuerzas laterales y aceleración centrípeta.
+            </p>
+        </div>
+
+        <!-- Área de simulación -->
+        <div class="p-4 bg-slate-950 border-b border-slate-850">
+            <div class="flex justify-between items-center mb-3">
+                <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded text-indigo-300 bg-indigo-950/50 border border-indigo-900/50">
+                    Visualizador Dinámico de Curvatura (1 px = 0.15 metros)
+                </span>
+                <div class="flex space-x-2">
+                    <button id="btnAnimate" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-1 px-3 rounded text-xs transition-all">
+                        Pausar Simulación
+                    </button>
+                    <button id="btnReset" class="bg-slate-850 hover:bg-slate-800 text-slate-300 font-medium py-1 px-3 rounded text-xs transition-all border border-slate-700">
+                        Reiniciar Trayecto
+                    </button>
+                </div>
+            </div>
+
+            <!-- Contenedor del Canvas -->
+            <div class="relative w-full bg-slate-900 rounded-lg overflow-hidden border border-slate-800 flex justify-center items-center">
+                <canvas id="roundaboutCanvas" class="block cursor-crosshair"></canvas>
+            </div>
+        </div>
+
+        <!-- Controles y Métricas -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
+            
+            <!-- Columna Izquierda: Parámetros -->
+            <div class="space-y-4">
+                <h2 class="text-lg font-bold text-slate-200 border-b border-slate-800 pb-2">Parámetros de Diseño</h2>
+                
+                <!-- Radio Exterior -->
+                <div class="bg-slate-950/40 p-3 rounded-lg border border-slate-800/60">
+                    <div class="flex justify-between mb-1 text-xs">
+                        <label for="outerRadius" class="font-semibold text-slate-300">Radio de la Rotonda (Exterior):</label>
+                        <span class="font-bold text-indigo-400" id="valOuterRadius">22.5 m</span>
+                    </div>
+                    <input type="range" id="outerRadius" min="80" max="180" value="150" step="5"
+                        class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                </div>
+
+                <!-- Radio de la Isla Central -->
+                <div class="bg-slate-950/40 p-3 rounded-lg border border-slate-800/60">
+                    <div class="flex justify-between mb-1 text-xs">
+                        <label for="innerRadius" class="font-semibold text-slate-300">Radio Isla Central:</label>
+                        <span class="font-bold text-indigo-400" id="valInnerRadius">10.5 m</span>
+                    </div>
+                    <input type="range" id="innerRadius" min="40" max="100" value="70" step="5"
+                        class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                </div>
+
+                <!-- Estilo de Conducción / Trayectoria -->
+                <div class="bg-slate-950/40 p-3 rounded-lg border border-slate-800/60">
+                    <label class="block text-xs font-semibold text-slate-300 mb-2">Estilo de Trayectoria:</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button id="typeConservative" class="py-1.5 px-2 text-xs rounded font-medium border border-indigo-500 bg-indigo-950/40 text-indigo-300 transition-all">
+                            Conservador
+                        </button>
+                        <button id="typeApex" class="py-1.5 px-2 text-xs rounded font-medium border border-slate-800 bg-slate-950 text-slate-400 hover:text-slate-300 transition-all">
+                            Ápice / Deportivo
+                        </button>
+                        <button id="typeWide" class="py-1.5 px-2 text-xs rounded font-medium border border-slate-800 bg-slate-950 text-slate-400 hover:text-slate-300 transition-all">
+                            Abierta / Exterior
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Ángulo de Entrada y Salida -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-slate-950/40 p-3 rounded-lg border border-slate-800/60">
+                        <div class="flex justify-between mb-1 text-xs">
+                            <label for="entryAngle" class="font-semibold text-slate-400">Entrada (º):</label>
+                            <span class="font-bold text-slate-300" id="valEntryAngle">270º</span>
+                        </div>
+                        <input type="range" id="entryAngle" min="0" max="360" value="270" step="15"
+                            class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-slate-400">
+                    </div>
+                    <div class="bg-slate-950/40 p-3 rounded-lg border border-slate-800/60">
+                        <div class="flex justify-between mb-1 text-xs">
+                            <label for="exitAngle" class="font-semibold text-slate-400">Salida (º):</label>
+                            <span class="font-bold text-slate-300" id="valExitAngle">0º</span>
+                        </div>
+                        <input type="range" id="exitAngle" min="0" max="360" value="0" step="15"
+                            class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-slate-400">
+                    </div>
+                </div>
+
+                <!-- Velocidad de Entrada -->
+                <div class="bg-slate-950/40 p-3 rounded-lg border border-slate-800/60">
+                    <div class="flex justify-between mb-1 text-xs">
+                        <label for="speed" class="font-semibold text-emerald-400">Velocidad del Vehículo:</label>
+                        <span class="font-bold text-emerald-300" id="valSpeed">30 km/h</span>
+                    </div>
+                    <input type="range" id="speed" min="10" max="80" value="30" step="5"
+                        class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+                </div>
+            </div>
+
+            <!-- Columna Derecha: Análisis de Física del Curvado -->
+            <div class="space-y-4 bg-slate-950/50 p-4 rounded-lg border border-slate-800">
+                <h2 class="text-lg font-bold text-slate-200 border-b border-slate-800 pb-2">Telemetría y Física</h2>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <!-- Longitud total -->
+                    <div class="bg-slate-900 p-3 rounded-lg border border-slate-800">
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Longitud de Ruta</span>
+                        <div class="flex items-baseline mt-0.5">
+                            <span id="metricLength" class="text-xl font-black text-white">0.0</span>
+                            <span class="text-slate-400 ml-1 text-xs">metros</span>
+                        </div>
+                    </div>
+                    <!-- Tiempo de cruce -->
+                    <div class="bg-slate-900 p-3 rounded-lg border border-slate-800">
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Tiempo Estimado</span>
+                        <div class="flex items-baseline mt-0.5">
+                            <span id="metricTime" class="text-xl font-black text-white">0.0</span>
+                            <span class="text-slate-400 ml-1 text-xs">segundos</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Radio de Giro Mínimo -->
+                <div class="bg-slate-900 p-3 rounded-lg border border-slate-800">
+                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Radio de Curvatura Mínimo ($R_{\text{min}}$)</span>
+                    <div class="flex items-baseline mt-0.5">
+                        <span id="metricMinRadius" class="text-xl font-black text-indigo-400">0.0</span>
+                        <span class="text-slate-400 ml-1 text-xs">metros</span>
+                    </div>
+                    <p class="text-[10px] text-slate-500 mt-1">Ocurre en el punto más cerrado de la trayectoria (ápice).</p>
+                </div>
+
+                <!-- Aceleración Centrípeta / Fuerza G Lateral -->
+                <div id="gForceCard" class="p-4 rounded-lg border border-l-4 border-slate-800 bg-slate-900">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Fuerza Lateral Máxima</span>
+                            <span class="text-[10px] text-slate-500 block">Fórmula: $a_c = v^2 / R$</span>
+                        </div>
+                        <span id="gForceBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">Estable</span>
+                    </div>
+                    <div class="flex items-baseline mt-2">
+                        <span id="metricGForce" class="text-2xl font-black text-white">0.00</span>
+                        <span class="text-slate-400 ml-1 text-xs">G lateral</span>
+                    </div>
+                    <div class="w-full bg-slate-950 rounded-full h-1.5 mt-2 overflow-hidden">
+                        <div id="gForceBar" class="bg-emerald-500 h-1.5 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="text-[10px] text-slate-500 leading-relaxed bg-slate-900/50 p-2.5 rounded border border-slate-850">
+                    <strong>Nota Física:</strong> La fuerza centrípeta es la que mantiene al coche en la curva. Si supera los <strong>0.8 G</strong> en asfalto convencional, los neumáticos perderán adherencia lateral, provocando subviraje o sobreviraje (derrape).
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script de Geometría y Renderizado -->
+    <script>
+        const canvas = document.getElementById('roundaboutCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Inputs
+        const inputOuterRadius = document.getElementById('outerRadius');
+        const inputInnerRadius = document.getElementById('innerRadius');
+        const inputEntryAngle = document.getElementById('entryAngle');
+        const inputExitAngle = document.getElementById('exitAngle');
+        const inputSpeed = document.getElementById('speed');
+
+        // Visual labels
+        const valOuterRadius = document.getElementById('valOuterRadius');
+        const valInnerRadius = document.getElementById('valInnerRadius');
+        const valEntryAngle = document.getElementById('valEntryAngle');
+        const valExitAngle = document.getElementById('valExitAngle');
+        const valSpeed = document.getElementById('valSpeed');
+
+        // Métricas
+        const metricLength = document.getElementById('metricLength');
+        const metricTime = document.getElementById('metricTime');
+        const metricMinRadius = document.getElementById('metricMinRadius');
+        const metricGForce = document.getElementById('metricGForce');
+        const gForceCard = document.getElementById('gForceCard');
+        const gForceBadge = document.getElementById('gForceBadge');
+        const gForceBar = document.getElementById('gForceBar');
+
+        // Botones
+        const btnAnimate = document.getElementById('btnAnimate');
+        const btnReset = document.getElementById('btnReset');
+
+        // Variables del estado
+        let pathPoints = [];
+        let carProgress = 0; // 0 a 1
+        let isRunning = true;
+        let lineType = 'conservative'; // 'conservative', 'apex', 'wide'
+        
+        const scale = 0.15; // 1 pixel = 0.15 metros
+
+        // Botones de estilo de conducción
+        const btnCons = document.getElementById('typeConservative');
+        const btnApex = document.getElementById('typeApex');
+        const btnWide = document.getElementById('typeWide');
+
+        function setLineType(type) {
+            lineType = type;
+            [btnCons, btnApex, btnWide].forEach(btn => {
+                btn.className = "py-1.5 px-2 text-xs rounded font-medium border border-slate-800 bg-slate-950 text-slate-400 hover:text-slate-300 transition-all";
+            });
+            if (type === 'conservative') {
+                btnCons.className = "py-1.5 px-2 text-xs rounded font-medium border border-indigo-500 bg-indigo-950/40 text-indigo-300 transition-all";
+            } else if (type === 'apex') {
+                btnApex.className = "py-1.5 px-2 text-xs rounded font-medium border border-indigo-500 bg-indigo-950/40 text-indigo-300 transition-all";
+            } else if (type === 'wide') {
+                btnWide.className = "py-1.5 px-2 text-xs rounded font-medium border border-indigo-500 bg-indigo-950/40 text-indigo-300 transition-all";
+            }
+            rebuildAll();
+        }
+
+        btnCons.addEventListener('click', () => setLineType('conservative'));
+        btnApex.addEventListener('click', () => setLineType('apex'));
+        btnWide.addEventListener('click', () => setLineType('wide'));
+
+        // Listeners
+        [inputOuterRadius, inputInnerRadius, inputEntryAngle, inputExitAngle, inputSpeed].forEach(input => {
+            input.addEventListener('input', rebuildAll);
+        });
+
+        btnAnimate.addEventListener('click', () => {
+            isRunning = !isRunning;
+            btnAnimate.textContent = isRunning ? "Pausar Simulación" : "Reanudar Simulación";
+            btnAnimate.className = isRunning 
+                ? "bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-1 px-3 rounded text-xs transition-all"
+                : "bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-1 px-3 rounded text-xs transition-all";
+        });
+
+        btnReset.addEventListener('click', () => {
+            carProgress = 0;
+        });
+
+        function adjustCanvasSize() {
+            canvas.width = 500;
+            canvas.height = 400;
+        }
+
+        // Generación de trayectoria suave mediante Spline de Bezier cúbico compuesto
+        function generateTrajectory(cx, cy, rOut, rIn, angleInDeg, angleOutDeg) {
+            const radIn = angleInDeg * Math.PI / 180;
+            const radOut = angleOutDeg * Math.PI / 180;
+
+            const entryDist = rOut + 60;
+            const exitDist = rOut + 60;
+
+            // Punto de Entrada (Atrás en la calle)
+            const P0 = {
+                x: cx + entryDist * Math.cos(radIn) + 12 * Math.cos(radIn + Math.PI/2),
+                y: cy + entryDist * Math.sin(radIn) + 12 * Math.sin(radIn + Math.PI/2)
+            };
+
+            // Punto de inserción de rotonda
+            const P1 = {
+                x: cx + rOut * Math.cos(radIn) + 10 * Math.cos(radIn + Math.PI/2),
+                y: cy + rOut * Math.sin(radIn) + 10 * Math.sin(radIn + Math.PI/2)
+            };
+
+            // Cálculo del Ápice (Punto medio de giro dentro de la rotonda)
+            // Se calcula el ángulo intermedio respetando el sentido horario/antihorario
+            // En España se circula por la derecha (sentido antihorario en la rotonda)
+            let diffAngle = radOut - radIn;
+            if (diffAngle < 0) diffAngle += 2 * Math.PI;
+            
+            // Para ir por la derecha antihorario alrededor de la isla central:
+            const midAngle = radIn + diffAngle / 2;
+
+            // Radio efectivo en el ápice según el estilo de conducción
+            let rApex = (rOut + rIn) / 2; // Conservador (mitad del carril)
+            if (lineType === 'apex') {
+                rApex = rIn + 12; // Deportivo (corta hacia el interior / isla)
+            } else if (lineType === 'wide') {
+                rApex = rOut - 12; // Exterior abierto
+            }
+
+            const P2 = {
+                x: cx + rApex * Math.cos(midAngle),
+                y: cy + rApex * Math.sin(midAngle)
+            };
+
+            // Salida de rotonda
+            const P3 = {
+                x: cx + rOut * Math.cos(radOut) + 10 * Math.cos(radOut + Math.PI/2),
+                y: cy + rOut * Math.sin(radOut) + 10 * Math.sin(radOut + Math.PI/2)
+            };
+
+            // Salida al carril externo
+            const P4 = {
+                x: cx + exitDist * Math.cos(radOut) + 12 * Math.cos(radOut + Math.PI/2),
+                y: cy + exitDist * Math.sin(radOut) + 12 * Math.sin(radOut + Math.PI/2)
+            };
+
+            // Generar puntos muestreados a lo largo del trayecto interpolado
+            const points = [];
+            const segments = 150;
+
+            for (let i = 0; i <= segments; i++) {
+                const t = i / segments;
+                let pt;
+                // Dividimos el camino en dos curvas Bezier cuadráticas para un control perfecto del ápice
+                if (t < 0.5) {
+                    const localT = t * 2;
+                    pt = getQuadraticBezierPoint(P0, P1, P2, localT);
+                } else {
+                    const localT = (t - 0.5) * 2;
+                    pt = getQuadraticBezierPoint(P2, P3, P4, localT);
+                }
+                points.push(pt);
+            }
+            return points;
+        }
+
+        function getQuadraticBezierPoint(p0, p1, p2, t) {
+            const x = (1 - t) * (1 - t) * p0.x + 2 * (1 - t) * t * p1.x + t * t * p2.x;
+            const y = (1 - t) * (1 - t) * p0.y + 2 * (1 - t) * t * p1.y + t * t * p2.y;
+            return { x, y };
+        }
+
+        // Cálculos de Física aplicada
+        function computeTrajectoryMetrics() {
+            if (pathPoints.length < 3) return;
+
+            // 1. Longitud total en metros
+            let totalDistPx = 0;
+            for (let i = 1; i < pathPoints.length; i++) {
+                const dx = pathPoints[i].x - pathPoints[i-1].x;
+                const dy = pathPoints[i].y - pathPoints[i-1].y;
+                totalDistPx += Math.sqrt(dx*dx + dy*dy);
+            }
+            const totalDistMeters = totalDistPx * scale;
+            metricLength.textContent = totalDistMeters.toFixed(1);
+
+            // 2. Tiempo estimado de tránsito
+            const speedKmh = parseFloat(inputSpeed.value);
+            const speedMs = speedKmh / 3.6;
+            const timeSeconds = totalDistMeters / speedMs;
+            metricTime.textContent = timeSeconds.toFixed(2);
+
+            // 3. Calcular curvatura local y radio de giro mínimo en metros
+            // Usamos diferencias finitas para estimar el radio en cada punto: R = (ds) / (d theta)
+            let minR = Infinity;
+            
+            for (let i = 2; i < pathPoints.length - 2; i++) {
+                const pA = pathPoints[i - 1];
+                const pB = pathPoints[i];
+                const pC = pathPoints[i + 1];
+
+                // Fórmula matemática de radio de curvatura por 3 puntos discretos
+                const area = (pA.x * (pB.y - pC.y) + pB.x * (pC.y - pA.y) + pC.x * (pA.y - pB.y)) / 2;
+                if (Math.abs(area) > 0.01) {
+                    const dAB = Math.hypot(pB.x - pA.x, pB.y - pA.y);
+                    const dBC = Math.hypot(pC.x - pB.x, pC.y - pB.y);
+                    const dCA = Math.hypot(pA.x - pC.x, pA.y - pC.y);
+                    const Rpx = (dAB * dBC * dCA) / (4 * Math.abs(area));
+                    const Rmeters = Rpx * scale;
+                    if (Rmeters < minR && Rmeters > 2) { // Evitamos ruidos numéricos de rectas infinitas
+                        minR = Rmeters;
+                    }
+                }
+            }
+
+            if (minR === Infinity) minR = parseFloat(inputInnerRadius.value) * scale;
+            metricMinRadius.textContent = minR.toFixed(1);
+
+            // 4. Aceleración lateral en Fuerzas G
+            // ac = v^2 / R
+            const gForce = (speedMs * speedMs) / (minR * 9.81);
+            metricGForce.textContent = gForce.toFixed(2);
+
+            // Ajustar el diseño del indicador según el umbral de seguridad
+            gForceBar.style.width = `${Math.min(100, gForce * 100)}%`;
+            if (gForce < 0.4) {
+                gForceBadge.textContent = "Estable";
+                gForceBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-800/50";
+                gForceCard.className = "p-4 rounded-lg border border-l-4 border-l-emerald-500 bg-slate-900 border-slate-800";
+                gForceBar.className = "bg-emerald-500 h-1.5 rounded-full";
+            } else if (gForce < 0.75) {
+                gForceBadge.textContent = "Límite Confort";
+                gForceBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-950/80 text-amber-300 border border-amber-800/50";
+                gForceCard.className = "p-4 rounded-lg border border-l-4 border-l-amber-500 bg-slate-900 border-slate-800";
+                gForceBar.className = "bg-amber-500 h-1.5 rounded-full";
+            } else {
+                gForceBadge.textContent = "⚠️ Derrape Inminente";
+                gForceBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-950/80 text-red-300 border border-red-800/50 animate-pulse";
+                gForceCard.className = "p-4 rounded-lg border border-l-4 border-l-red-500 bg-slate-900 border-slate-800 bg-red-950/5";
+                gForceBar.className = "bg-red-500 h-1.5 rounded-full";
+            }
+        }
+
+        function rebuildAll() {
+            // Actualizar etiquetas numéricas de control
+            const rOutVal = parseFloat(inputOuterRadius.value);
+            const rInVal = parseFloat(inputInnerRadius.value);
+            
+            valOuterRadius.textContent = `${(rOutVal * scale).toFixed(1)} m`;
+            valInnerRadius.textContent = `${(rInVal * scale).toFixed(1)} m`;
+            valEntryAngle.textContent = `${inputEntryAngle.value}º`;
+            valExitAngle.textContent = `${inputExitAngle.value}º`;
+            valSpeed.textContent = `${inputSpeed.value} km/h`;
+
+            // Mantener consistencia: la isla siempre debe ser menor que el exterior
+            if (rInVal >= rOutVal - 30) {
+                inputInnerRadius.value = rOutVal - 30;
+                valInnerRadius.textContent = `${((rOutVal - 30) * scale).toFixed(1)} m`;
+            }
+
+            // Generar ruta
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            pathPoints = generateTrajectory(cx, cy, parseFloat(inputOuterRadius.value), parseFloat(inputInnerRadius.value), parseFloat(inputEntryAngle.value), parseFloat(inputExitAngle.value));
+
+            // Calcular físicas
+            computeTrajectoryMetrics();
+        }
+
+        // Renderizado del lienzo
+        function drawScene() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            const rOut = parseFloat(inputOuterRadius.value);
+            const rIn = parseFloat(inputInnerRadius.value);
+
+            // --- 1. ASfalto / ÁrEA ROTONDA ---
+            ctx.fillStyle = '#1e293b'; // Slate 800
+            ctx.beginPath();
+            ctx.arc(cx, cy, rOut + 20, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Bordes de la calzada exterior
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(cx, cy, rOut + 20, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Dibujar carril divisor si el ancho lo permite
+            if (rOut - rIn > 50) {
+                ctx.strokeStyle = '#64748b';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([10, 10]);
+                ctx.beginPath();
+                ctx.arc(cx, cy, (rOut + rIn) / 2 + 10, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // --- 2. ISLA CENTRAL (Jardín interior) ---
+            ctx.fillStyle = '#0f172a'; // Slate 900
+            ctx.beginPath();
+            ctx.arc(cx, cy, rIn, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = '#10b981'; // Ápice verde natural para la isla
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(cx, cy, rIn, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // --- 3. DIBUJAR CALLES DE ACCESO Y SALIDA (Bocetos visuales directos) ---
+            const drawStreet = (angle) => {
+                const rad = angle * Math.PI / 180;
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(rad);
+                
+                // Asfalto de la vía de acceso
+                ctx.fillStyle = '#1e293b';
+                ctx.fillRect(rOut - 5, -25, 100, 50);
+
+                // Líneas laterales
+                ctx.fillStyle = '#475569';
+                ctx.fillRect(rOut - 5, -25, 100, 2);
+                ctx.fillRect(rOut - 5, 23, 100, 2);
+
+                // Línea discontinua central de carril
+                ctx.strokeStyle = '#64748b';
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(rOut, 0);
+                ctx.lineTo(rOut + 100, 0);
+                ctx.stroke();
+                
+                ctx.restore();
+            };
+
+            drawStreet(parseFloat(inputEntryAngle.value));
+            drawStreet(parseFloat(inputExitAngle.value));
+
+            // --- 4. TRAYECTORIA DE GIRO ---
+            ctx.strokeStyle = '#6366f1'; // Color índigo para la trayectoria
+            ctx.lineWidth = 3.5;
+            ctx.beginPath();
+            if (pathPoints.length > 0) {
+                ctx.moveTo(pathPoints[0].x, pathPoints[0].y);
+                for (let i = 1; i < pathPoints.length; i++) {
+                    ctx.lineTo(pathPoints[i].x, pathPoints[i].y);
+                }
+                ctx.stroke();
+            }
+
+            // --- 5. RENDERIZAR COCHE ---
+            if (pathPoints.length > 0) {
+                const index = Math.floor(carProgress * (pathPoints.length - 1));
+                const carPos = pathPoints[index];
+
+                // Calcular orientación del coche basada en la derivada de posición
+                let angle = 0;
+                if (index < pathPoints.length - 1) {
+                    const nextPos = pathPoints[index + 1];
+                    angle = Math.atan2(nextPos.y - carPos.y, nextPos.x - carPos.x);
+                } else {
+                    const prevPos = pathPoints[index - 1];
+                    angle = Math.atan2(carPos.y - prevPos.y, carPos.x - prevPos.x);
+                }
+
+                ctx.save();
+                ctx.translate(carPos.x, carPos.y);
+                ctx.rotate(angle);
+
+                // Dibujar vehículo (Cuadro elegante deportivo)
+                ctx.fillStyle = '#f43f5e'; // Color rojo vivo
+                ctx.beginPath();
+                ctx.roundRect(-10, -5, 20, 10, 3);
+                ctx.fill();
+
+                // Cristal parabrisas
+                ctx.fillStyle = '#93c5fd';
+                ctx.fillRect(2, -3, 4, 6);
+
+                // Luces traseras de curvas
+                ctx.fillStyle = '#ef4444';
+                ctx.fillRect(-10, -4, 1.5, 2);
+                ctx.fillRect(-10, 2, 1.5, 2);
+
+                // Faros delanteros
+                ctx.fillStyle = '#fbbf24';
+                ctx.fillRect(9, -4, 1, 1.5);
+                ctx.fillRect(9, 2.5, 1, 1.5);
+
+                ctx.restore();
+            }
+        }
+
+        // Loop de animación estable
+        let lastTime = 0;
+        function update(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            const dt = (timestamp - lastTime) / 1000;
+            lastTime = timestamp;
+
+            if (isRunning && pathPoints.length > 0) {
+                // Avanzar según la velocidad elegida
+                const speedKmh = parseFloat(inputSpeed.value);
+                // El avance del factor T depende de la velocidad del coche
+                const speedFactor = (speedKmh / 3.6) * 1.5 * scale; // Escala de velocidad en la pantalla
+                carProgress += (speedFactor / 100);
+
+                if (carProgress > 1) {
+                    carProgress = 0; // Reinicio cíclico
+                }
+            }
+
+            drawScene();
+            requestAnimationFrame(update);
+        }
+
+        // Inicialización
+        window.onload = function() {
+            adjustCanvasSize();
+            rebuildAll();
+            requestAnimationFrame(update);
+        };
+    </script>
+</body>
+</html>

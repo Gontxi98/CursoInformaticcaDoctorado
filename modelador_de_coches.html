@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modelador de Coches interactivo</title>
+    <!-- Tailwind CSS para diseño moderno -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Fondo estilo cuadrícula de diseño técnico / blueprint */
+        .blueprint-grid {
+            background-color: #0f172a;
+            background-image: 
+                linear-gradient(rgba(30, 41, 59, 0.5) 1.5px, transparent 1.5px),
+                linear-gradient(90deg, rgba(30, 41, 59, 0.5) 1.5px, transparent 1.5px),
+                linear-gradient(rgba(51, 65, 85, 0.2) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(51, 65, 85, 0.2) 1px, transparent 1px);
+            background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
+            background-position: center;
+        }
+
+        /* Transiciones suaves para los cambios de tamaño */
+        .car-transition {
+            transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1), height 0.2s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease;
+        }
+        
+        /* Ocultar barra de scroll en inputs de rango en algunos navegadores */
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            border: 2px solid #ffffff;
+            box-shadow: 0 0 5px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col">
+
+    <!-- Encabezado -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur py-4 px-6 sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-600 p-2 rounded-lg text-white font-bold text-xl shadow-lg shadow-blue-500/20">
+                    🚗
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight">Estudio de Dimensiones 2D</h1>
+                    <p class="text-xs text-slate-400">Modelado y escalado proporcional de vehículos en tiempo real</p>
+                </div>
+            </div>
+            
+            <!-- Selector de Presets Rápidos -->
+            <div class="flex flex-wrap gap-2 bg-slate-800/80 p-1.5 rounded-lg border border-slate-700">
+                <button onclick="applyPreset(3.8, 1.68, '#10b981', 'Compacto')" class="px-3 py-1.5 text-xs font-medium rounded-md hover:bg-slate-700 transition bg-slate-700 text-white" id="btn-compacto">
+                    🚗 Compacto
+                </button>
+                <button onclick="applyPreset(4.75, 1.82, '#3b82f6', 'Sedán')" class="px-3 py-1.5 text-xs font-medium rounded-md hover:bg-slate-700 transition text-slate-300" id="btn-sedan">
+                    🚘 Sedán
+                </button>
+                <button onclick="applyPreset(4.95, 1.98, '#f59e0b', 'SUV')" class="px-3 py-1.5 text-xs font-medium rounded-md hover:bg-slate-700 transition text-slate-300" id="btn-suv">
+                    🚙 SUV
+                </button>
+                <button onclick="applyPreset(4.50, 2.05, '#ef4444', 'Superdeportivo')" class="px-3 py-1.5 text-xs font-medium rounded-md hover:bg-slate-700 transition text-slate-300" id="btn-superdeportivo">
+                    🏎️ Deportivo
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Contenido Principal -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col lg:flex-row gap-6">
+        
+        <!-- Panel de Control Izquierdo -->
+        <section class="w-full lg:w-96 flex flex-col gap-5 bg-slate-800/50 border border-slate-800 p-5 rounded-2xl backdrop-blur-sm self-start">
+            <h2 class="text-lg font-semibold border-b border-slate-700 pb-2">Controles de Diseño</h2>
+            
+            <!-- Control de Largo -->
+            <div class="space-y-2">
+                <div class="flex justify-between items-center">
+                    <span class="text-sm font-medium text-slate-300">Largo (Longitud)</span>
+                    <span class="text-sm font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded" id="largo-val-m">4.75 m</span>
+                </div>
+                <input type="range" id="input-largo" min="3.0" max="6.2" step="0.05" value="4.75" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                <div class="flex justify-between text-[10px] text-slate-500">
+                    <span>Mín: 3.0m (Mini)</span>
+                    <span>Máx: 6.2m (Limusina)</span>
+                </div>
+            </div>
+
+            <!-- Control de Ancho -->
+            <div class="space-y-2">
+                <div class="flex justify-between items-center">
+                    <span class="text-sm font-medium text-slate-300">Ancho (Anchura)</span>
+                    <span class="text-sm font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded" id="ancho-val-m">1.82 m</span>
+                </div>
+                <input type="range" id="input-ancho" min="1.4" max="2.4" step="0.02" value="1.82" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                <div class="flex justify-between text-[10px] text-slate-500">
+                    <span>Mín: 1.4m (K-Car)</span>
+                    <span>Máx: 2.4m (Camión)</span>
+                </div>
+            </div>
+
+            <hr class="border-slate-700">
+
+            <!-- Personalización Visual -->
+            <div class="space-y-3">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Estética del Vehículo</h3>
+                
+                <!-- Color de la Carrocería -->
+                <div>
+                    <label class="block text-xs text-slate-300 mb-1.5">Color de Carrocería</label>
+                    <div class="flex items-center gap-3">
+                        <input type="color" id="input-color" value="#3b82f6" class="w-10 h-10 bg-transparent border-0 cursor-pointer rounded-lg">
+                        <span class="text-xs font-mono text-slate-400" id="color-hex">#3b82f6</span>
+                    </div>
+                </div>
+
+                <!-- Detalles adicionales -->
+                <div class="pt-2">
+                    <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
+                        <input type="checkbox" id="check-detalles" checked class="rounded border-slate-700 bg-slate-800 text-blue-600 focus:ring-blue-500">
+                        Mostrar detalles (Faros, lunas, alerón)
+                    </label>
+                </div>
+            </div>
+
+            <hr class="border-slate-700">
+
+            <!-- Ficha Técnica Informativa -->
+            <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-700/50 space-y-2 text-xs">
+                <h3 class="font-bold text-slate-200">📊 Ficha de Homologación</h3>
+                <div class="grid grid-cols-2 gap-y-2 text-slate-400 mt-2">
+                    <div>Categoría Activa:</div>
+                    <div class="text-right text-white font-semibold" id="ficha-cat">Sedán</div>
+                    <div>Relación de Aspecto:</div>
+                    <div class="text-right text-white font-mono" id="ficha-ratio">2.61 : 1</div>
+                    <div>Superficie Ocupada:</div>
+                    <div class="text-right text-white font-mono" id="ficha-area">8.65 m²</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Lienzo de Modelado Derecho -->
+        <section class="flex-1 flex flex-col bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl min-h-[450px]">
+            <div class="bg-slate-900/90 border-b border-slate-800 py-3 px-4 flex justify-between items-center">
+                <span class="text-xs font-medium text-slate-400 flex items-center gap-2">
+                    <span class="inline-block w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span>
+                    Vista Superior (Escala Dinámica)
+                </span>
+                <span class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded">1 cuadrícula = 0.5 metros</span>
+            </div>
+
+            <!-- El Lienzo Virtual -->
+            <div class="flex-1 blueprint-grid relative flex items-center justify-center p-6 select-none overflow-hidden">
+                
+                <!-- Área del Coche y Cotas -->
+                <div class="relative flex items-center justify-center" id="container-visual">
+                    
+                    <!-- Línea de cota horizontal (Largo) -->
+                    <div class="absolute -bottom-12 left-0 right-0 flex flex-col items-center">
+                        <div class="w-full flex items-center">
+                            <div class="h-1.5 w-1.5 rounded-full bg-blue-500"></div>
+                            <div class="h-[1px] bg-blue-500/80 flex-1 relative">
+                                <div class="absolute inset-y-0 left-0 w-2 h-2 -mt-1 border-t border-l border-blue-500 rotate-45"></div>
+                                <div class="absolute inset-y-0 right-0 w-2 h-2 -mt-1 border-b border-r border-blue-500 rotate-45"></div>
+                            </div>
+                            <div class="h-1.5 w-1.5 rounded-full bg-blue-500"></div>
+                        </div>
+                        <span class="text-xs text-blue-400 font-mono mt-1" id="cota-largo">4.75 m</span>
+                    </div>
+
+                    <!-- Línea de cota vertical (Ancho) -->
+                    <div class="absolute -left-12 top-0 bottom-0 flex items-center">
+                        <div class="h-full flex flex-col items-center justify-between py-1 relative">
+                            <div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                            <div class="w-[1px] bg-blue-500/80 flex-1 relative">
+                                <div class="absolute inset-x-0 top-0 w-2 h-2 -ml-1 border-t border-r border-blue-500 rotate-[135deg]"></div>
+                                <div class="absolute inset-x-0 bottom-0 w-2 h-2 -ml-1 border-b border-l border-blue-500 rotate-[135deg]"></div>
+                            </div>
+                            <div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                            <!-- Texto rotado de la cota vertical -->
+                            <span class="absolute left-[-50px] top-1/2 -translate-y-1/2 text-xs text-blue-400 font-mono rotate-270 whitespace-nowrap" id="cota-ancho" style="transform: rotate(-90deg) translateY(-50%);">1.82 m</span>
+                        </div>
+                    </div>
+
+                    <!-- Representación Física del Coche -->
+                    <div id="coche-render" class="car-transition relative rounded-[40px] flex items-center justify-center shadow-[0_20px_50px_rgba(0,0,0,0.6)] border-2 border-white/10" style="width: 380px; height: 145px; background-color: rgb(59, 130, 246);">
+                        
+                        <!-- Cristales / Habitáculo -->
+                        <div id="detalles-cristales" class="absolute inset-y-[12%] left-[22%] right-[22%] bg-slate-950/80 rounded-[25px] border border-white/15 flex items-center justify-between px-4 overflow-hidden">
+                            <!-- Parabrisas Delantero -->
+                            <div class="w-[18%] h-[80%] bg-sky-400/40 rounded-r-lg border-r border-sky-300/30"></div>
+                            <!-- Luneta Trasera -->
+                            <div class="w-[12%] h-[80%] bg-sky-400/30 rounded-l-lg border-l border-sky-300/30"></div>
+                        </div>
+
+                        <!-- Faros Delanteros (A la derecha, simulando avance) -->
+                        <div id="detalles-faros" class="absolute right-1 inset-y-[18%] flex flex-col justify-between py-1">
+                            <div class="w-3 h-5 bg-yellow-300 rounded-l-full shadow-[0_0_15px_rgba(253,224,71,0.8)] border border-yellow-200"></div>
+                            <div class="w-3 h-5 bg-yellow-300 rounded-l-full shadow-[0_0_15px_rgba(253,224,71,0.8)] border border-yellow-200"></div>
+                        </div>
+
+                        <!-- Luces Traseras (A la izquierda) -->
+                        <div id="detalles-traseros" class="absolute left-0 inset-y-[15%] flex flex-col justify-between py-1">
+                            <div class="w-2.5 h-6 bg-red-600 rounded-r-sm shadow-[0_0_8px_rgba(239,68,68,0.5)]"></div>
+                            <div class="w-2.5 h-6 bg-red-600 rounded-r-sm shadow-[0_0_8px_rgba(239,68,68,0.5)]"></div>
+                        </div>
+
+                        <!-- Retrovisores Laterales -->
+                        <div id="detalles-retrovisores" class="absolute inset-x-0 -top-4 -bottom-4 flex justify-between items-center px-[30%] pointer-events-none">
+                            <div class="w-4 h-3 bg-slate-800 rounded-t-lg border-t border-slate-600 self-start"></div>
+                            <div class="w-4 h-3 bg-slate-800 rounded-b-lg border-b border-slate-600 self-end"></div>
+                        </div>
+
+                        <!-- Spoiler / Alerón trasero decorativo -->
+                        <div id="detalles-spoiler" class="absolute left-[-6px] top-[15%] bottom-[15%] w-3 bg-slate-950 rounded-lg border border-white/10"></div>
+
+                        <!-- Neumáticos decorativos (Aparecen debajo para simular profundidad) -->
+                        <div class="absolute -top-3 left-[15%] w-14 h-4 bg-slate-900 rounded-t-md shadow-md border-b border-slate-950"></div>
+                        <div class="absolute -bottom-3 left-[15%] w-14 h-4 bg-slate-900 rounded-b-md shadow-md border-t border-slate-950"></div>
+                        <div class="absolute -top-3 right-[18%] w-14 h-4 bg-slate-900 rounded-t-md shadow-md border-b border-slate-950"></div>
+                        <div class="absolute -bottom-3 right-[18%] w-14 h-4 bg-slate-900 rounded-b-md shadow-md border-t border-slate-950"></div>
+
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Footer Informativo del Canvas -->
+            <div class="bg-slate-900/90 py-3 px-4 border-t border-slate-800 text-center text-xs text-slate-400">
+                <span>💡 El largo influye en la estabilidad y habitabilidad, el ancho mejora el paso por curva.</span>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Script de lógica interactiva -->
+    <script>
+        // Escala básica: 1 metro de coche real equivale a 80 píxeles en el lienzo
+        const ESCALA_PX = 80;
+
+        // Elementos DOM de interacción
+        const inputLargo = document.getElementById('input-largo');
+        const inputAncho = document.getElementById('input-ancho');
+        const inputColor = document.getElementById('input-color');
+        const checkDetalles = document.getElementById('check-detalles');
+
+        // Elementos de visualización
+        const cocheRender = document.getElementById('coche-render');
+        const colorHex = document.getElementById('color-hex');
+        const cotaLargo = document.getElementById('cota-largo');
+        const cotaAncho = document.getElementById('cota-ancho');
+        
+        // Elementos del panel lateral (Ficha técnica)
+        const largoValM = document.getElementById('largo-val-m');
+        const anchoValM = document.getElementById('ancho-val-m');
+        const fichaCat = document.getElementById('ficha-cat');
+        const fichaRatio = document.getElementById('ficha-ratio');
+        const fichaArea = document.getElementById('ficha-area');
+
+        // Elementos de detalles decorativos del coche
+        const detallesCristales = document.getElementById('detalles-cristales');
+        const detallesFaros = document.getElementById('detalles-faros');
+        const detallesTraseros = document.getElementById('detalles-traseros');
+        const detallesRetrovisores = document.getElementById('detalles-retrovisores');
+        const detallesSpoiler = document.getElementById('detalles-spoiler');
+
+        // Botones de categorías
+        const botonesPreset = {
+            'Compacto': document.getElementById('btn-compacto'),
+            'Sedán': document.getElementById('btn-sedan'),
+            'SUV': document.getElementById('btn-suv'),
+            'Superdeportivo': document.getElementById('btn-superdeportivo')
+        };
+
+        // Función para actualizar el coche con los valores actuales
+        function actualizarVisualizacion() {
+            const largoMetros = parseFloat(inputLargo.value);
+            const anchoMetros = parseFloat(inputAncho.value);
+            const colorCarroceria = inputColor.value;
+
+            // Calcular tamaño en píxeles basado en la escala
+            const largoPx = Math.round(largoMetros * ESCALA_PX);
+            const anchoPx = Math.round(anchoMetros * ESCALA_PX);
+
+            // Aplicar tamaño y estilo al coche renderizado
+            cocheRender.style.width = `${largoPx}px`;
+            cocheRender.style.height = `${anchoPx}px`;
+            cocheRender.style.backgroundColor = colorCarroceria;
+
+            // Actualizar etiquetas de cotas y datos
+            cotaLargo.textContent = `${largoMetros.toFixed(2)} m`;
+            cotaAncho.textContent = `${anchoMetros.toFixed(2)} m`;
+            largoValM.textContent = `${largoMetros.toFixed(2)} m`;
+            anchoValM.textContent = `${anchoMetros.toFixed(2)} m`;
+            colorHex.textContent = colorCarroceria.toUpperCase();
+
+            // Cálculos técnicos
+            const ratio = (largoMetros / anchoMetros).toFixed(2);
+            const area = (largoMetros * anchoMetros).toFixed(2);
+
+            fichaRatio.textContent = `${ratio} : 1`;
+            fichaArea.textContent = `${area} m²`;
+
+            // Detectar automáticamente la categoría más cercana en base al tamaño
+            determinarCategoriaCercana(largoMetros, anchoMetros);
+        }
+
+        // Aplicar presets de categorías predefinidas
+        function applyPreset(largo, ancho, color, idPreset) {
+            inputLargo.value = largo;
+            inputAncho.value = ancho;
+            inputColor.value = color;
+            
+            // Actualizar interfaz
+            actualizarVisualizacion();
+            resaltarBotonActivo(idPreset);
+            fichaCat.textContent = idPreset;
+        }
+
+        // Determina cuál preset se parece más para etiquetar la ficha de homologación
+        function determinarCategoriaCercana(largo, ancho) {
+            let categoria = "Personalizado";
+            
+            if (largo < 4.2 && ancho < 1.75) {
+                categoria = "Compacto";
+            } else if (largo >= 4.2 && largo < 4.9 && ancho < 1.9 && largo/ancho > 2.3) {
+                categoria = "Sedán";
+            } else if (ancho >= 1.9 && largo >= 4.6 && largo/ancho < 2.6) {
+                categoria = "SUV";
+            } else if (largo/ancho <= 2.25 && largo >= 4.3 && ancho >= 1.95) {
+                categoria = "Superdeportivo";
+            }
+            
+            fichaCat.textContent = categoria;
+            resaltarBotonActivo(categoria);
+        }
+
+        // Cambiar estilos visuales de botones activos
+        function resaltarBotonActivo(idActivo) {
+            Object.keys(botonesPreset).forEach(key => {
+                const btn = botonesPreset[key];
+                if (key === idActivo) {
+                    btn.classList.add('bg-slate-700', 'text-white');
+                    btn.classList.remove('text-slate-300');
+                } else {
+                    btn.classList.remove('bg-slate-700', 'text-white');
+                    btn.classList.add('text-slate-300');
+                }
+            });
+        }
+
+        // Alternar detalles estéticos
+        checkDetalles.addEventListener('change', (e) => {
+            const mostrar = e.target.checked;
+            const displayValue = mostrar ? 'flex' : 'none';
+            const displayBlock = mostrar ? 'block' : 'none';
+
+            detallesCristales.style.display = displayValue;
+            detallesFaros.style.display = displayValue;
+            detallesTraseros.style.display = displayValue;
+            detallesRetrovisores.style.display = displayValue;
+            detallesSpoiler.style.display = displayBlock;
+        });
+
+        // Event listeners para los controles interactivos
+        inputLargo.addEventListener('input', actualizarVisualizacion);
+        inputAncho.addEventListener('input', actualizarVisualizacion);
+        inputColor.addEventListener('input', actualizarVisualizacion);
+
+        // Inicializar por primera vez
+        actualizarVisualizacion();
+    </script>
+</body>
+</html>
